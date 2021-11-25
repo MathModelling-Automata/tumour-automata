@@ -105,7 +105,7 @@ def evolve(D,n_seed,times,mot,mul,mort,agents=None, agent_params=None):
 
             # Find cancer cells
             if L[cell]==1:
-                if len(gaps)<=1:
+                if len(gaps)<=4:
                     L = cell_death(mort,L,cell)
                 if len(gaps)>0:
                     move, grow = decide_fate(mot,mul)
@@ -130,7 +130,6 @@ def cell_count(traces):
         out.append(cells)
     return out
 
-import multiprocessing as mp
 from multiprocessing import Process, Queue
 
 def dummy(queue):
@@ -145,9 +144,6 @@ def run(queue,D,n_seed,tmax,mot,mul,mort,agents,agent_params):
 
 if __name__=="__main__":
 
-
-
-
     # Variables
 
     mot= 0.001 # Motility
@@ -159,7 +155,7 @@ if __name__=="__main__":
     
     D=50 # Dimensions of array
     tmax=40 # Timeout
-    n_iter=5    # Repeats
+    n_iter=3    # Repeats
     n_seed = 10 # Number of cancer cells at t=0
 
     if agent_ratio==0:
@@ -210,3 +206,5 @@ if __name__=="__main__":
     plt.ylabel("N_cells")
     plt.show()
     
+    plt.imshow(traces[0][-1])
+    plt.show()
