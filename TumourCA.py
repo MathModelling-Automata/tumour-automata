@@ -131,11 +131,6 @@ def cell_count(traces):
         out.append(cells)
     return out
 
-from multiprocessing import Process, Queue
-
-def dummy(queue):
-    queue.put(["test "])
-
 def run(D,n_seed,tmax,mot,mul,mort,agents,agent_params):
     times=np.linspace(0,tmax,tmax)
     trace,kills = evolve(D,n_seed,times,mot,mul,mort,agents=agents,agent_params=agent_params)
