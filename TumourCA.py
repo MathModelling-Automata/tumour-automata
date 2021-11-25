@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import multiprocessing as mp
 
 # Seed 
 def seed(D,n_seed,agents=None,agent_params=None):
@@ -135,11 +136,11 @@ from multiprocessing import Process, Queue
 def dummy(queue):
     queue.put(["test "])
 
-def run(queue,D,n_seed,tmax,mot,mul,mort,agents,agent_params):
+def run(D,n_seed,tmax,mot,mul,mort,agents,agent_params):
     times=np.linspace(0,tmax,tmax)
     trace,kills = evolve(D,n_seed,times,mot,mul,mort,agents=agents,agent_params=agent_params)
     cellcount = cell_count(trace)
-    queue.put([times,trace,kills,cellcount])
+    return times,trace,kills,cellcount
 
 def plot_counts(t,cellcounts,kills,agents=None):
 
@@ -174,7 +175,7 @@ if __name__=="__main__":
     # Fixed parameters
     
     D=50 # Dimensions of array
-    tmax=40 # Timeout
+    tmax=5 # Timeout
     n_iter=3    # Repeats
     n_seed = 10 # Number of cancer cells at t=0
 
@@ -198,17 +199,11 @@ if __name__=="__main__":
 
     # Run processes across parallel threads
 
-    q=Queue()
-    jobs=[]
-    print("Running %s iterations for %s timesteps"%(n_iter,tmax))
-    for i in range(n_iter):
-        print("Starting job: ",str(i+1))
-        p = Process(target=run, args=(q,*kwargs))
-        p.start()
-        jobs.append(q.get())
-        p.join()
-        print("Job %s completed"%(str(i+1)))
     
+    pool= mp.Pool(mp.cpu_count())
+    jobs=[pool.apply(run,args= kwargs) for i in range(n_iter)]
+    pool.close()
+
     times,traces, kills,cellcounts = [[job[i] for job in jobs] for i in range(0,4)]
     t = times[0]
     traces=[job[1] for job in jobs]
@@ -216,5 +211,4 @@ if __name__=="__main__":
     cellcounts=np.asarray([job[3] for job in jobs])
 
     plot_counts(t,cellcounts,kills,agents)
-
     plate_trace(traces[0])
