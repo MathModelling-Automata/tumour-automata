@@ -87,7 +87,7 @@ def kill(L,neighbours,kills,kill_ratio):
     return out, kills
 
 
-def evolve(D,n_seed,tmax,mot,mul,mort,agents=None, agent_params=None):
+def evolve(D,n_seed,times,mot,mul,mort,agents=None, agent_params=None):
     L = seed(D,n_seed,agents,agent_params)
     if agents:
         _,agent_mot,agent_mul,agent_mort,kill_ratio = agent_params
@@ -97,7 +97,7 @@ def evolve(D,n_seed,tmax,mot,mul,mort,agents=None, agent_params=None):
     out=[]
     kills=[]
     k=0
-    while t<tmax:
+    for t in times:
         out.append(L)
         coords = get_nonzero(L)
         for cell in coords:
@@ -120,7 +120,6 @@ def evolve(D,n_seed,tmax,mot,mul,mort,agents=None, agent_params=None):
                     move, grow = decide_fate(agent_mot,agent_mul)
                     L=move_grow(cell,gaps,L,move,grow)
         kills.append(k)
-        t+=1
 
     return out,kills
 
@@ -129,62 +128,85 @@ def cell_count(traces):
     for trace in traces:
         cells = np.count_nonzero(trace>0)
         out.append(cells)
-    return np.linspace(0,len(traces),len(traces)),out
+    return out
 
-D=50 # Dimensions of array
-tmax=50 # Timeout
-n_iter=2    # Repeats
+import multiprocessing as mp
+from multiprocessing import Process, Queue
 
-n_seed = 10 # Number of cancer cells at t=0
-mot = 0.001 # Motility
-mul = 0.023 # Growth constant
-mort = 0.036    # Death constant
+def dummy(queue):
+    queue.put(["test "])
 
-agents=True
-n_agents = 20   # Number of immune cells at t=0
-agent_mot = 1   # Immune cell motility
-agent_mul = 0   # Immune cell growth constant
-agent_mort = 0  # Immune cell death constant
-kill_ratio= 1   # Efficiency of killing
-
-if agents:
-    agent_params=[n_agents,agent_mot,agent_mul,agent_mort,kill_ratio]
-else:
-    agent_params=None
-
-kwargs= [D,n_seed,tmax,mot,mul,mort,agents,agent_params]
+def run(queue,D,n_seed,tmax,mot,mul,mort,agents,agent_params):
+    times=np.linspace(0,tmax,tmax)
+    trace,kills = evolve(D,n_seed,times,mot,mul,mort,agents=agents,agent_params=agent_params)
+    cellcount = cell_count(trace)
+    queue.put([times,trace,kills,cellcount])
 
 
-def run(D,n_seed,tmax,mot,mul,mort,agents,agent_params):
-    combined=[]
-    means=[]
-    kills = []
+if __name__=="__main__":
 
-    for n in range(n_iter):
-        print("Runing simulation %s/%s"%(str(n+1),str(n_iter)))
-        trace,k = evolve(D,n_seed,tmax,mot,mul,mort,agents=agents,agent_params=agent_params)
-        combined.append(trace)
-        kills.append(k)
-        t, cellcount = cell_count(trace)
-        means.append(cellcount)
-        plt.plot(t,cellcount)
-        
-    plt.plot(t,np.mean(np.asarray(means),axis=0),color='black',label='mean cell_count')
+
+
+
+    # Variables
+
+    mot= 0.001 # Motility
+    mul= 0.023 # Growth constant
+    mort= 0.036    # Death constant
+    agent_ratio= 2  # Number of immune cells at t=0
+
+    # Fixed parameters
+    
+    D=50 # Dimensions of array
+    tmax=40 # Timeout
+    n_iter=5    # Repeats
+    n_seed = 10 # Number of cancer cells at t=0
+
+    if agent_ratio==0:
+        agents=False
+    else:
+        agents=True
+        n_agents=int(agent_ratio*n_seed)
+
+    agent_mot = 1   # Immune cell motility
+    agent_mul = 0   # Immune cell growth constant
+    agent_mort = 0  # Immune cell death constant
+    kill_ratio= 1   # Efficiency of killing
+
     if agents:
-        plt.plot(t,np.mean(np.asarray(kills),axis=0),color='black',linestyle='dashed',label='mean kill_count')
-    plt.xlabel("Time")
-    plt.ylabel("Cell count")
+        agent_params=[n_agents,agent_mot,agent_mul,agent_mort,kill_ratio]
+    else:
+        agent_params=None
+
+    kwargs= [D,n_seed,tmax,mot,mul,mort,agents,agent_params]
+
+    # Run processes across parallel threads
+
+    q=Queue()
+    jobs=[]
+    print("Running %s iterations for %s timesteps"%(n_iter,tmax))
+    for i in range(n_iter):
+        print("Starting job: ",str(i))
+        p = Process(target=run, args=(q,*kwargs))
+        p.start()
+        jobs.append(q.get())
+        p.join()
+        print("Job %s completed"%(str(i)))
+    
+
+    times,traces, kills,cellcounts = [[job[i] for job in jobs] for i in range(0,4)]
+    t = times[0]
+    traces=[job[1] for job in jobs]
+    kills=np.asarray([job[2] for job in jobs])
+    cellcounts=np.asarray([job[3] for job in jobs])
+
+    mean_counts, mean_kills =[np.mean(x,axis=0) for x in [cellcounts,kills]]
+    for c_count in cellcounts:
+        plt.plot(t,c_count)
+    plt.plot(t,mean_counts,color='black',label="mean_count")
+    plt.plot(t,mean_kills,color='black',linestyle='dashed',label="mean_kill_total")
     plt.legend()
+    plt.xlabel("Time")
+    plt.ylabel("N_cells")
     plt.show()
-
-    # for trace in combined:
-    #     plt.imshow(trace[-1])
-    #     plt.show()
-
-    for t in combined[0]:
-        plt.imshow(t)
-        plt.show()
-    for t in combined:
-        plt.imshow(t[-1])
-
-run(*kwargs)
+    
