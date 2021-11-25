@@ -44,12 +44,12 @@ def get_neighbours(coords,L,D):
     # Get neighbour coordinates
     pos_neighbours = [(a,b) for a in range(x1,x2,1) for b in range(y1,y2,1) if (a,b)!=coords]
     
-    # Return the neighbour coordinates not occupied by a cell
+    # Return neighbours and gaps
     return [n for n in pos_neighbours if L[n]>0],[n for n in pos_neighbours if L[n]==0]
 
 def cell_death(mort,L,cell):
     r = np.random.uniform(0,1)
-    if r>mort:
+    if r<mort:
         L[cell]=0
     return L
 
@@ -75,20 +75,22 @@ def move_grow(cell,gaps,L,move,grow):
 
     return out
 
-def kill(L,neighbours,kills):
+def kill(L,neighbours,kills,kill_ratio):
+    out=L.copy()
     if len(neighbours)>0:
-        out=L.copy()
-        target = np.random.randint(0,len(neighbours),len(neighbours))
-        out[target]=0
-        kills+=1
-        return out, kills
-    else:
-        return L, kills
+        np.random.shuffle(neighbours)
+    # target = np.random.randint(0,len(neighbours),len(neighbours))
+        for target in neighbours[:kill_ratio*len(neighbours)]:
+            out[target]=0
+            kills+=1
+
+    return out, kills
+
 
 def evolve(D,n_seed,tmax,mot,mul,mort,agents=None, agent_params=None):
     L = seed(D,n_seed,agents,agent_params)
     if agents:
-        _,agent_mot,agent_mul,agent_mort = agent_params
+        _,agent_mot,agent_mul,agent_mort,kill_ratio = agent_params
 
     t=0
     kills=0
@@ -99,22 +101,22 @@ def evolve(D,n_seed,tmax,mot,mul,mort,agents=None, agent_params=None):
         out.append(L)
         coords = get_nonzero(L)
         for cell in coords:
-            neighbours,gaps=  get_neighbours(cell,L,D)
+            neighbours,gaps= get_neighbours(cell,L,D)
 
             # Find cancer cells
             if L[cell]==1:
                 if len(gaps)<=1:
                     L = cell_death(mort,L,cell)
-                if len(gaps)!=0:
+                if len(gaps)>0:
                     move, grow = decide_fate(mot,mul)
                     L=move_grow(cell,gaps,L,move,grow)
                     
             # Find immune cells
             elif L[cell]==-1:
-                L,k=kill(L,neighbours,k)
-                if len(gaps)<=1:
-                    L = cell_death(agent_mort,L,cell)
-                if len(gaps)!=0:
+                L,k=kill(L,neighbours,k,kill_ratio)
+                # if len(gaps)<=1:
+                #     L = cell_death(agent_mort,L,cell)
+                if len(gaps)>0:
                     move, grow = decide_fate(agent_mot,agent_mul)
                     L=move_grow(cell,gaps,L,move,grow)
         kills.append(k)
@@ -129,50 +131,60 @@ def cell_count(traces):
         out.append(cells)
     return np.linspace(0,len(traces),len(traces)),out
 
+D=50 # Dimensions of array
+tmax=50 # Timeout
+n_iter=2    # Repeats
 
-D=50
-n_seed = 10
-mot = 0.001
-mul = 0.023
-mort = 0.036
-n_agents = 20
-agent_mot = 1
-agent_mul = 0
-agent_mort = 0
+n_seed = 10 # Number of cancer cells at t=0
+mot = 0.001 # Motility
+mul = 0.023 # Growth constant
+mort = 0.036    # Death constant
+
 agents=True
+n_agents = 20   # Number of immune cells at t=0
+agent_mot = 1   # Immune cell motility
+agent_mul = 0   # Immune cell growth constant
+agent_mort = 0  # Immune cell death constant
+kill_ratio= 1   # Efficiency of killing
 
 if agents:
-    agent_params=[n_agents,agent_mot,agent_mul,agent_mort]
+    agent_params=[n_agents,agent_mot,agent_mul,agent_mort,kill_ratio]
 else:
     agent_params=None
 
-tmax=10
-n_iter=2
+kwargs= [D,n_seed,tmax,mot,mul,mort,agents,agent_params]
 
 
-combined=[]
-means=[]
-kills = []
+def run(D,n_seed,tmax,mot,mul,mort,agents,agent_params):
+    combined=[]
+    means=[]
+    kills = []
 
-for n in range(n_iter):
-    print("Runing simulation %s/%s"%(str(n+1),str(n_iter)))
-    trace,k = evolve(D,n_seed,tmax,mot,mul,mort,agents=agents,agent_params=agent_params)
-    combined.append(trace)
-    kills.append(k)
-    t, cellcount = cell_count(trace)
-    means.append(cellcount)
-    plt.plot(t,cellcount)
-    print("Total kills: ",k)
-    
-plt.plot(t,np.mean(np.asarray(means),axis=0),color='black',label='mean cell_count')
-if agents:
-    plt.plot(t,np.mean(np.asarray(kills),axis=0),color='black',linestyle='dashed',label='mean kill_count')
-plt.xlabel("Time")
-plt.ylabel("Cell count")
-plt.legend()
-plt.show()
-
-# for trace in combined:
-for t in range(tmax):
-    plt.imshow(trace[t])
+    for n in range(n_iter):
+        print("Runing simulation %s/%s"%(str(n+1),str(n_iter)))
+        trace,k = evolve(D,n_seed,tmax,mot,mul,mort,agents=agents,agent_params=agent_params)
+        combined.append(trace)
+        kills.append(k)
+        t, cellcount = cell_count(trace)
+        means.append(cellcount)
+        plt.plot(t,cellcount)
+        
+    plt.plot(t,np.mean(np.asarray(means),axis=0),color='black',label='mean cell_count')
+    if agents:
+        plt.plot(t,np.mean(np.asarray(kills),axis=0),color='black',linestyle='dashed',label='mean kill_count')
+    plt.xlabel("Time")
+    plt.ylabel("Cell count")
+    plt.legend()
     plt.show()
+
+    # for trace in combined:
+    #     plt.imshow(trace[-1])
+    #     plt.show()
+
+    for t in combined[0]:
+        plt.imshow(t)
+        plt.show()
+    for t in combined:
+        plt.imshow(t[-1])
+
+run(*kwargs)
