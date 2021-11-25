@@ -141,6 +141,25 @@ def run(queue,D,n_seed,tmax,mot,mul,mort,agents,agent_params):
     cellcount = cell_count(trace)
     queue.put([times,trace,kills,cellcount])
 
+def plot_counts(t,cellcounts,kills,agents=None):
+
+    mean_counts = np.mean(cellcounts,axis=0)
+
+    for c_count in cellcounts:
+        plt.plot(t,c_count)
+    plt.plot(t,mean_counts,color='black',label="mean_count")
+    if agents:
+        mean_kills = np.mean(kills,axis=0)
+        plt.plot(t,mean_kills,color='black',linestyle='dashed',label="mean_kill_total")
+    plt.legend()
+    plt.xlabel("Time")
+    plt.ylabel("N_cells")
+    plt.show()
+
+def plate_trace(trace):
+    for image in trace:
+        plt.imshow(image)
+        plt.show()
 
 if __name__=="__main__":
 
@@ -148,7 +167,8 @@ if __name__=="__main__":
 
     mot= 0.001 # Motility
     mul= 0.023 # Growth constant
-    mort= 0.036    # Death constant
+    # mort= 0.036    # Death constant
+    mort=0.5
     agent_ratio= 2  # Number of immune cells at t=0
 
     # Fixed parameters
@@ -182,29 +202,19 @@ if __name__=="__main__":
     jobs=[]
     print("Running %s iterations for %s timesteps"%(n_iter,tmax))
     for i in range(n_iter):
-        print("Starting job: ",str(i))
+        print("Starting job: ",str(i+1))
         p = Process(target=run, args=(q,*kwargs))
         p.start()
         jobs.append(q.get())
         p.join()
-        print("Job %s completed"%(str(i)))
+        print("Job %s completed"%(str(i+1)))
     
-
     times,traces, kills,cellcounts = [[job[i] for job in jobs] for i in range(0,4)]
     t = times[0]
     traces=[job[1] for job in jobs]
     kills=np.asarray([job[2] for job in jobs])
     cellcounts=np.asarray([job[3] for job in jobs])
 
-    mean_counts, mean_kills =[np.mean(x,axis=0) for x in [cellcounts,kills]]
-    for c_count in cellcounts:
-        plt.plot(t,c_count)
-    plt.plot(t,mean_counts,color='black',label="mean_count")
-    plt.plot(t,mean_kills,color='black',linestyle='dashed',label="mean_kill_total")
-    plt.legend()
-    plt.xlabel("Time")
-    plt.ylabel("N_cells")
-    plt.show()
-    
-    plt.imshow(traces[0][-1])
-    plt.show()
+    plot_counts(t,cellcounts,kills,agents)
+
+    plate_trace(traces[0])
