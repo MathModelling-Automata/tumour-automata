@@ -9,7 +9,7 @@ Immune cell agents; and
 Nutrient diffusion 
 Sequential Monte Carlo Approximate Bayesian Computation (SMC-ABC) was subsequently applied to infer parameter values from blinded traces
 
-**Pseudocode:**
+**Pseudocode**
 
 Seed a 50x50 grid with 10 cancer cells
 Optionally: add immune cells at n=agent_ratio*n_seed (default=2)
@@ -28,9 +28,9 @@ For n_iterations (default 3), while t<40 timesteps:
     Standard deviation at tmax and t1/2
    Mean killing events
    
-**Results:**
-_
-Qualitative observations:_
+**Results**
+
+Qualitative observations:
 - Tumour cell automata  follow a logistic growth pattern, with growth rate reaching  plateau at cell plate capacity 
 - Introducing immune killing reduces the growth rate (see right), sensitive to agent_ratio
 - Mortality rates of c0.5 are required for an equilibrium cell concentration < saturation (@50x50=2500 cells)
