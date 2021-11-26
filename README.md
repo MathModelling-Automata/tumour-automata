@@ -40,3 +40,7 @@ Qualitative observations:
 Sensitivity analysis (n=3 per instance) reveals:
 - A positive correlation between motility and growth constants and cell count at time t
 - Increased noise with increased mortality rate
+
+Running the model
+- The main executable can be found under main.py
+- Dependencies are listed under requirements.txt
