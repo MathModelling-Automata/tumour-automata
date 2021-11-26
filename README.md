@@ -14,19 +14,19 @@ Sequential Monte Carlo Approximate Bayesian Computation (SMC-ABC) was subsequent
 Seed a 50x50 grid with 10 cancer cells
 Optionally: add immune cells at n=agent_ratio*n_seed (default=2)
 For n_iterations (default 3), while t<40 timesteps:
-  Find non-zero cell coordinates
-    For each cancer cell:
-    Find nonzero neighbours and gaps
-    If n_gaps<=4, cell dies with probability ∝p(mortality)
-    If n_gaps>0, cell moves with probability∝p(multiply) and p(motility)
-  (For immune cells):
-    Find nonzero neighbours and gaps
-    Kill all cancer cell neighbours
-    If n_gaps>0, cell moves 1 step in a random direction
-  Evaluate:
-    Mean cancer cells at tmax and t1/2
-    Standard deviation at tmax and t1/2
-   Mean killing events
+- Find non-zero cell coordinates
+-   For each cancer cell:
+-     Find nonzero neighbours and gaps
+-     If n_gaps<=4, cell dies with probability ∝p(mortality)
+-     If n_gaps>0, cell moves with probability∝p(multiply) and p(motility)
+-   (For immune cells):
+-     Find nonzero neighbours and gaps
+-     Kill all cancer cell neighbours
+-     If n_gaps>0, cell moves 1 step in a random direction
+-    Evaluate:
+-     Mean cancer cells at tmax and t1/2
+-     Standard deviation at tmax and t1/2
+-     Mean killing events
    
 **Results**
 
