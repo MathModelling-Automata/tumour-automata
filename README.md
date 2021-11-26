@@ -8,7 +8,9 @@ The baseline forward model was expanded to incorporate:
 Immune cell agents; and
 Nutrient diffusion 
 Sequential Monte Carlo Approximate Bayesian Computation (SMC-ABC) was subsequently applied to infer parameter values from blinded traces
+
 ![alt text](https://github.com/MathModelling-Automata/tumour-automata/blob/main/20211125_1415.gif)
+
 **Pseudocode**
 
 Seed a 50x50 grid with 10 cancer cells
