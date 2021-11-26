@@ -49,7 +49,7 @@ if __name__=="__main__":
     mot= 0.001 # Motility
     mul= 0.023 # Growth constant
     # mort= 0.036    # Death constant
-    mort=1    # Death constant
+    mort=0.5    # Death constant
     agent_ratio= 2  # Number of immune cells at t=0
 
     param_dict= {
@@ -73,4 +73,4 @@ if __name__=="__main__":
     time = now.strftime("%Y%m%d_%H%M")
     title=" ".join([str(k)+": "+str(v) for (k,v) in param_dict.items()])
     plot_counts(title,time,t,cellcounts,kills,agents,save=True)
-    plate_trace(title,time,traces[0],save=False)
+    plate_trace(title,time,traces[0],save=True)
