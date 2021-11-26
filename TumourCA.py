@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing as mp
+from datetime import datetime
 
 # Seed 
 def seed(D,n_seed,agents=None,agent_params=None):
@@ -56,7 +57,13 @@ def cell_death(mort,L,cell):
 
 def decide_fate(mot,mul):
     r2=np.random.uniform(0,1)
-    if r2<mot/(mot+mul):
+    move=False
+    grow=False
+    if mot==0:
+        move=False
+    elif mul ==0:
+        grow=False
+    elif r2<mot/(mot+mul):
         move=True
         grow=False
     else:
@@ -87,13 +94,11 @@ def kill(L,neighbours,kills,kill_ratio):
 
     return out, kills
 
-
 def evolve(D,n_seed,times,mot,mul,mort,agents=None, agent_params=None):
     L = seed(D,n_seed,agents,agent_params)
     if agents:
         _,agent_mot,agent_mul,agent_mort,kill_ratio = agent_params
 
-    t=0
     kills=0
     out=[]
     kills=[]
@@ -131,16 +136,9 @@ def cell_count(traces):
         out.append(cells)
     return out
 
-def run(D,n_seed,tmax,mot,mul,mort,agents,agent_params):
-    times=np.linspace(0,tmax,tmax)
-    trace,kills = evolve(D,n_seed,times,mot,mul,mort,agents=agents,agent_params=agent_params)
-    cellcount = cell_count(trace)
-    return times,trace,kills,cellcount
-
-def plot_counts(t,cellcounts,kills,agents=None):
+def plot_counts(title,time, t,cellcounts,kills,agents=None,save=False):
 
     mean_counts = np.mean(cellcounts,axis=0)
-
     for c_count in cellcounts:
         plt.plot(t,c_count)
     plt.plot(t,mean_counts,color='black',label="mean_count")
@@ -150,60 +148,24 @@ def plot_counts(t,cellcounts,kills,agents=None):
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("N_cells")
+    plt.title(title)
+    if save:
+        plt.savefig("results/%s_chart.png"%(time))
     plt.show()
+    
 
-def plate_trace(trace):
-    for image in trace:
+def plate_trace(title,time, trace,save=False):
+    for i,image in enumerate(trace):
         plt.imshow(image)
-        plt.show()
+        plt.title(title)
+        if save:
+            plt.savefig("results/%s_time%s.png"%(time,str(i)))
 
-if __name__=="__main__":
+def run(D,n_seed,tmax,mot,mul,mort,agents,agent_params):
 
-    # Variables
+    times=np.linspace(0,tmax,tmax)
+    trace,kills = evolve(D,n_seed,times,mot,mul,mort,agents=agents,agent_params=agent_params)
+    cellcount = cell_count(trace)
+    return times,trace,kills,cellcount
 
-    mot= 0.001 # Motility
-    mul= 0.023 # Growth constant
-    # mort= 0.036    # Death constant
-    mort=0.5
-    agent_ratio= 2  # Number of immune cells at t=0
 
-    # Fixed parameters
-    
-    D=50 # Dimensions of array
-    tmax=5 # Timeout
-    n_iter=3    # Repeats
-    n_seed = 10 # Number of cancer cells at t=0
-
-    if agent_ratio==0:
-        agents=False
-    else:
-        agents=True
-        n_agents=int(agent_ratio*n_seed)
-
-    agent_mot = 1   # Immune cell motility
-    agent_mul = 0   # Immune cell growth constant
-    agent_mort = 0  # Immune cell death constant
-    kill_ratio= 1   # Efficiency of killing
-
-    if agents:
-        agent_params=[n_agents,agent_mot,agent_mul,agent_mort,kill_ratio]
-    else:
-        agent_params=None
-
-    kwargs= [D,n_seed,tmax,mot,mul,mort,agents,agent_params]
-
-    # Run processes across parallel threads
-
-    
-    pool= mp.Pool(mp.cpu_count())
-    jobs=[pool.apply(run,args= kwargs) for i in range(n_iter)]
-    pool.close()
-
-    times,traces, kills,cellcounts = [[job[i] for job in jobs] for i in range(0,4)]
-    t = times[0]
-    traces=[job[1] for job in jobs]
-    kills=np.asarray([job[2] for job in jobs])
-    cellcounts=np.asarray([job[3] for job in jobs])
-
-    plot_counts(t,cellcounts,kills,agents)
-    plate_trace(traces[0])
