@@ -13,7 +13,7 @@ Sequential Monte Carlo Approximate Bayesian Computation (SMC-ABC) was subsequent
 
 Seed a 50x50 grid with 10 cancer cells
 Optionally: add immune cells at n=agent_ratio*n_seed (default=2)
-For n_iterations (default 3), while t<40 timesteps:
+- For n_iterations (default 3), while t<40 timesteps:
 - Find non-zero cell coordinates
 -   For each cancer cell:
 -     Find nonzero neighbours and gaps
