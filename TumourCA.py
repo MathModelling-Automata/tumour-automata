@@ -160,6 +160,9 @@ def plate_trace(title,time, trace,save=False):
         plt.title(title)
         if save:
             plt.savefig("results/%s_time%s.png"%(time,str(i)))
+        else:
+            plt.imshow(image)
+            plt.show()
 
 def run(D,n_seed,tmax,mot,mul,mort,agents,agent_params):
 
